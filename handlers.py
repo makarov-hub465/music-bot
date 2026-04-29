@@ -215,6 +215,7 @@ def process_review(message):
 # --- 6. ЗАКАЗ СТИХА (Логика состояний) ---
 @bot.message_handler(func=lambda message: message.text == "✍️ Заказать стих")
 def start_order(message):
+    print(f"🔥 КНОПКА НАЖАТА! Устанавливаю состояние для {message.from_user.id}")
     user_id = message.from_user.id
     user_states[user_id] = 'waiting_for_details'
     
