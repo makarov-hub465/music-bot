@@ -229,6 +229,7 @@ def start_order(message):
 
 @bot.message_handler(func=lambda message: user_states.get(message.from_user.id) == 'waiting_for_details')
 def process_order(message):
+    print(f"🚀 СООБЩЕНИЕ ПОЛУЧЕНО ОТ {message.from_user.id}: {message.text}") # <--- ДОБАВЬ ЭТО
     user_id = message.from_user.id
     details = message.text
     
