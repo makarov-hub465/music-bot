@@ -45,11 +45,12 @@ def add_user(user_id, name):
     print(f"✅ Новый пользователь добавлен: {name}")
 
 def get_catalog(sort_by_rating=False):
+    print("🎵 ЗАПРОШЕН КАТАЛОГ! Функция get_catalog запущена.") # <--- МАЯЧОК
     """
-    Возвращает список песен.
-    Если sort_by_rating=True, сортирует по убыванию рейтинга (столбец E, индекс 4).
+    Возвращает список песен...
     """
     sheet = get_sheet('Catalog')
+    # ... остальной код
     if not sheet: return []
     
     rows = sheet.get_all_values()
