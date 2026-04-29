@@ -14,7 +14,7 @@ def get_sheet(sheet_name):
         
         if not creds_json:
             print("❌ Ошибка: Переменная GOOGLE_CREDS_JSON не найдена!")
-            return None
+            return None 
             
         # Преобразуем строку JSON в словарь
         creds_dict = json.loads(creds_json)
