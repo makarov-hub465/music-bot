@@ -2,7 +2,7 @@ import os
 import telebot
 from flask import Flask, request
 from handlers import register_handlers
-from config import TG_TOKEN, ADMIN_ID
+from config import BOT_TOKEN, ADMIN_ID
 
 # Render сам назначит порт
 PORT = int(os.environ.get("PORT", 5000))
