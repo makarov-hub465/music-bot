@@ -275,6 +275,17 @@ def donate(message):
         "Нажми на кнопку ниже, чтобы выбрать сумму:",
         reply_markup=markup
     )
+
+@bot.message_handler(commands=['testfiles'])
+def test_files(message):
+    import os
+    try:
+        files = os.listdir('music')
+        mp3_files = [f for f in files if f.endswith('.mp3')]
+        bot.send_message(message.chat.id, f"Найдено MP3 файлов: {len(mp3_files)}\n{', '.join(mp3_files[:5])}")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"Ошибка: {e}")
+        
 # --- ЗАПУСК ОБРАБОТЧИКОВ ---
 def register_handlers():
     return bot
