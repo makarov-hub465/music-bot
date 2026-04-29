@@ -1,13 +1,27 @@
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from config import SHEET_ID, CREDS_FILE
-from datetime import datetime
+import json
+import os
+from config import SHEET_ID
 
 def get_sheet(sheet_name):
-    """Подключается к нужному листу таблицы"""
+    """Подключается к нужному листу таблицы используя переменную окружения"""
     try:
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-        creds = ServiceAccountCredentials.from_json_keyfile_name(CREDS_FILE, scope)
+        
+        # Получаем JSON из переменной окружения
+        creds_json = os.getenv('GOOGLE_CREDS_JSON')
+        
+        if not creds_json:
+            print("❌ Ошибка: Переменная GOOGLE_CREDS_JSON не найдена!")
+            return None
+            
+        # Преобразуем строку JSON в словарь
+        creds_dict = json.loads(creds_json)
+        
+        # Создаем учетные данные из словаря
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        
         client = gspread.authorize(creds)
         sheet = client.open_by_key(SHEET_ID).worksheet(sheet_name)
         return sheet
