@@ -10,7 +10,7 @@ def get_sheet(sheet_name):
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
         
         # Получаем JSON из переменной окружения
-        creds_json = os.getenv('GOOGLE_CREDS_JSON')
+        creds_json = os.getenv('GOOGLE_CREDS_JSON_V2')
         
         if not creds_json:
             print("❌ Ошибка: Переменная GOOGLE_CREDS_JSON не найдена!")
