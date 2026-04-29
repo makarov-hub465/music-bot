@@ -71,15 +71,23 @@ def update_rating(song_id):
 
 def add_order(user_id, details):
     """Добавляет заявку на заказ в лист Orders"""
+    print(f"🔍 Ищу лист 'Orders' для пользователя {user_id}...") # <--- МАЯЧОК 1
+    
     sheet = get_sheet('Orders')
-    if not sheet: return
+    
+    if not sheet:
+        print("❌ ОШИБКА: Лист 'Orders' не найден или нет доступа!") # <--- МАЯЧОК 2
+        return
     
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # Генерируем простой ID заказа (можно усложнить, но для старта хватит времени)
     order_id = int(datetime.now().timestamp())
     
-    sheet.append_row([order_id, user_id, now, details, "New"])
-    print(f"📝 Новая заявка от {user_id}")
+    try:
+        print(f"📝 Пытаюсь записать строку: [{order_id}, {user_id}, {now}, ...]") # <--- МАЯЧОК 3
+        sheet.append_row([order_id, user_id, now, details, "New"])
+        print("✅ ЗАПИСЬ УСПЕШНА!") # <--- МАЯЧОК 4
+    except Exception as e:
+        print(f"❌ ОШИБКА ПРИ ЗАПИСИ В ТАБЛИЦУ: {e}") # <--- МАЯЧОК 5
 
 def save_review(user_id, song_title, review_text):
     """Сохраняет отзыв в лист Reviews"""
