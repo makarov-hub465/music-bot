@@ -285,6 +285,19 @@ def test_files(message):
         bot.send_message(message.chat.id, f"Найдено MP3 файлов: {len(mp3_files)}\n{', '.join(mp3_files[:5])}")
     except Exception as e:
         bot.send_message(message.chat.id, f"Ошибка: {e}")
+
+@bot.message_handler(commands=['checkdb'])
+def check_db(message):
+    try:
+        songs = database.get_catalog(sort_by_rating=False) # Берем все без сортировки
+        if not songs:
+            bot.send_message(message.chat.id, "📭 Таблица пуста или не читается.")
+        else:
+            # Показываем первые 3 строки из таблицы
+            preview = "\n".join([f"{row[1]} - {row[2]}" for row in songs[:3]])
+            bot.send_message(message.chat.id, f"📄 В таблице найдено {len(songs)} записей.\n\nПервые 3:\n{preview}")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"❌ Ошибка доступа к БД: {e}")
         
 # --- ЗАПУСК ОБРАБОТЧИКОВ ---
 def register_handlers():
