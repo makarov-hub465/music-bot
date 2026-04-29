@@ -230,9 +230,13 @@ def start_order(message):
 
 @bot.message_handler(func=lambda message: user_states.get(message.from_user.id) == 'waiting_for_details')
 def process_order(message):
-    print(f"🚀 СООБЩЕНИЕ ПОЛУЧЕНО ОТ {message.from_user.id}: {message.text}") # <--- ДОБАВЬ ЭТО
+    # Этот принт появится ТОЛЬКО если условие выше выполнилось
+    print(f"🚀 ХЕНДЛЕР ЗАКАЗА СРАБОТАЛ! Текст: {message.text}") 
+    
     user_id = message.from_user.id
     details = message.text
+    
+    # ... остальной код
     
     # 1. Сохраняем в базу
     database.add_order(user_id, details)
