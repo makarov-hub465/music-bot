@@ -3,6 +3,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import json
 import os
 from config import SHEET_ID
+from datetime import datetime
 
 def get_sheet(sheet_name):
     """Подключается к нужному листу таблицы используя переменную окружения"""
