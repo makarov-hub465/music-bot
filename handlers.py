@@ -40,9 +40,26 @@ def start(message):
         print(f"Ошибка отправки фото: {e}")
         bot.send_message(user_id, f"Привет, {name}! 🎸 Я музыкальный ассистент.")
 
-    # --- КОМАНДА /MENU (Возврат клавиатуры) ---
+    # --- Сразу после фото показываем кнопку для открытия меню ---
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    btn_menu = types.KeyboardButton("📂 Главное меню")
+    markup.add(btn_menu)
+    
+    bot.send_message(
+        user_id, 
+        "Нажми кнопку ниже, чтобы открыть меню:",
+        reply_markup=markup
+    )
+
+# --- КОМАНДА /MENU (Возврат клавиатуры) ---
 @bot.message_handler(commands=['menu'])
-def show_menu(message):
+def show_menu_command(message):
+    # Вызываем ту же логику, что и при нажатии на кнопку "Главное меню"
+    show_main_menu(message)
+
+# --- Обработчик нажатия на кнопку "📂 Главное меню" ---
+@bot.message_handler(func=lambda message: message.text == "📂 Главное меню")
+def show_main_menu(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btn_top = types.KeyboardButton("🔥 Топ-3 Хита")
     btn_catalog = types.KeyboardButton("🎵 Весь каталог")
