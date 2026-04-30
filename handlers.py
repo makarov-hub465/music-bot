@@ -74,50 +74,43 @@ def show_main_menu(message):
 # --- 2. ТОП-10 ХИТОВ (ИСПРАВЛЕННАЯ ВЕРСИЯ) ---
 @bot.message_handler(func=lambda message: message.text == "🔥 Топ-3 Хита")
 def send_top_hits(message):
+    user_id = message.from_user.id
+    
+    # 1. Получаем отсортированный список (теперь он возвращает словари с file_id)
     songs = database.get_catalog(sort_by_rating=True)
+    
     if not songs:
-        bot.send_message(message.from_user.id, "Каталог пока пуст.")
+        bot.send_message(user_id, "Каталог пока пуст.")
         return
     
+    # 2. Берем только первые 3 песни
     top_songs = songs[:3]
     media_group = []
-    opened_files = [] # Список для хранения открытых файлов, чтобы они не закрылись раньше времени
     
-    for row in top_songs:
-        filename = row[2]
-        title = row[1]
-        file_path = os.path.join('music', filename)
+    for song in top_songs:
+        file_id = song.get('file_id')
+        title = song['title']
         
-        if os.path.exists(file_path):
-            try:
-                # Открываем файл и сохраняем ссылку на него
-                f = open(file_path, 'rb')
-                opened_files.append(f) 
-                
-                media = types.InputMediaAudio(
-                    media=f, # Передаем открытый объект файла
-                    caption=title,
-                    parse_mode='HTML'
-                )
-                media_group.append(media)
-            except Exception as e:
-                print(f"❌ Ошибка чтения файла {filename}: {e}")
+        # Проверяем, что file_id есть и он не пустой
+        if file_id and len(file_id) > 10:
+            media = types.InputMediaAudio(
+                media=file_id, # <-- Магия: передаем ID, а не файл!
+                caption=f"🎶 {title}"
+            )
+            media_group.append(media)
         else:
-            print(f"⚠️ Файл не найден: {file_path}")
+            print(f"⚠️ Пропускаю песню '{title}', нет valid file_id")
 
+    # 3. Отправляем альбом
     if media_group:
         try:
-            bot.send_media_group(message.from_user.id, media_group)
-            bot.send_message(message.from_user.id, "🎧 Приятного прослушивания!")
+            bot.send_media_group(user_id, media_group)
+            bot.send_message(user_id, "🎧 Приятного прослушивания!")
         except Exception as e:
-            print(f"❌ Ошибка отправки группы: {e}")
-            bot.send_message(message.from_user.id, "Не удалось отправить альбом.")
-        finally:
-            # Обязательно закрываем все файлы после отправки (или ошибки)
-            for f in opened_files:
-                f.close()
+            print(f"❌ Ошибка отправки альбома: {e}")
+            bot.send_message(user_id, "Не удалось загрузить треки. Попробуйте позже.")
     else:
-        bot.send_message(message.from_user.id, "Нет доступных файлов.")
+        bot.send_message(user_id, "Нет треков с корректными ID для отображения.")
 
 # --- 3. КАТАЛОГ ПЕСЕН (СПИСОК) ---
 @bot.message_handler(func=lambda message: message.text == "🎵 Весь каталог")
