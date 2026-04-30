@@ -86,11 +86,11 @@ def send_top_hits(message):
     
     # --- ХАК ДЛЯ ПРОВЕРКИ СОРТИРОВКИ ---
     # Бот пришлет тебе текстовый список того, что он собирается играть
-    debug_text = "📊 Проверка сортировки:\n"
-    for s in top_songs:
-        debug_text += f"• {s['title']} (Рейтинг: {s['rating']})\n"
+    # debug_text = "📊 Проверка сортировки:\n"
+    # for s in top_songs:
+    #    debug_text += f"• {s['title']} (Рейтинг: {s['rating']})\n"
     
-    bot.send_message(user_id, debug_text) 
+    # bot.send_message(user_id, debug_text) 
     # -----------------------------------
 
     media_group = []
