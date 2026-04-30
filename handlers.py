@@ -76,41 +76,45 @@ def show_main_menu(message):
 def send_top_hits(message):
     user_id = message.from_user.id
     
-    # 1. Получаем отсортированный список (теперь он возвращает словари с file_id)
     songs = database.get_catalog(sort_by_rating=True)
     
     if not songs:
         bot.send_message(user_id, "Каталог пока пуст.")
         return
     
-    # 2. Берем только первые 3 песни
     top_songs = songs[:3]
+    
+    # --- ХАК ДЛЯ ПРОВЕРКИ СОРТИРОВКИ ---
+    # Бот пришлет тебе текстовый список того, что он собирается играть
+    debug_text = "📊 Проверка сортировки:\n"
+    for s in top_songs:
+        debug_text += f"• {s['title']} (Рейтинг: {s['rating']})\n"
+    
+    bot.send_message(user_id, debug_text) 
+    # -----------------------------------
+
     media_group = []
     
     for song in top_songs:
         file_id = song.get('file_id')
         title = song['title']
         
-        # Проверяем, что file_id есть и он не пустой
         if file_id and len(file_id) > 10:
             media = types.InputMediaAudio(
-                media=file_id, # <-- Магия: передаем ID, а не файл!
+                media=file_id,
                 caption=f"🎶 {title}"
             )
             media_group.append(media)
-        else:
-            print(f"⚠️ Пропускаю песню '{title}', нет valid file_id")
 
-    # 3. Отправляем альбом
     if media_group:
         try:
             bot.send_media_group(user_id, media_group)
-            bot.send_message(user_id, "🎧 Приятного прослушивания!")
+            # bot.send_message(user_id, "🎧 Приятного прослушивания!") # Можно убрать, чтобы не спамить
         except Exception as e:
-            print(f"❌ Ошибка отправки альбома: {e}")
-            bot.send_message(user_id, "Не удалось загрузить треки. Попробуйте позже.")
+            print(f"❌ Ошибка отправки: {e}")
+            bot.send_message(user_id, f"Ошибка отправки: {e}")
     else:
-        bot.send_message(user_id, "Нет треков с корректными ID для отображения.")
+        bot.send_message(user_id, "Нет треков для отображения.")
 
 # --- 3. КАТАЛОГ ПЕСЕН (СПИСОК) ---
 @bot.message_handler(func=lambda message: message.text == "🎵 Весь каталог")
