@@ -47,36 +47,61 @@ def add_user(user_id, name):
 
 def get_catalog(sort_by_rating=False):
     """Возвращает список песен из таблицы Catalog"""
-    sheet = get_sheet('Catalog')
-    if not sheet:
+    try:
+        sheet = get_sheet('Catalog')
+        if not sheet:
+            print("❌ Не удалось подключиться к листу Catalog")
+            return []
+            
+        data = sheet.get_all_values()
+        
+        songs = []
+        # Начинаем с 1, чтобы пропустить заголовок таблицы
+        for row in data[1:]:
+            # Проверяем, что в строке достаточно данных (минимум 6 колонок)
+            if len(row) >= 6: 
+                try:
+                    rating_val = row[3].strip() # Убираем пробелы
+                    
+                    # Пробуем превратить в число. 
+                    # Сначала в float (чтобы поймать 5.0), потом в int
+                    if rating_val:
+                        rating = int(float(rating_val))
+                    else:
+                        rating = 0
+                    
+                    songs.append({
+                        'id': row[0],
+                        'title': row[1],
+                        'filename': row[2],
+                        'rating': rating,
+                        'file_id': row[5] # <-- File_ID из столбца F
+                    })
+                except Exception as e:
+                    # Если не получилось преобразовать рейтинг, ставим 0
+                    print(f"⚠️ Ошибка конвертации рейтинга для '{row[1]}': {e}")
+                    songs.append({
+                        'id': row[0],
+                        'title': row[1],
+                        'filename': row[2],
+                        'rating': 0,
+                        'file_id': row[5]
+                    })
+            else:
+                 print(f"⚠️ Пропущена короткая строка: {row}")
+        
+        if sort_by_rating:
+            # Сортируем по рейтингу (по убыванию)
+            # key=lambda x: x['rating'] говорит: "сортируй по полю rating"
+            # reverse=True говорит: "от большего к меньшему"
+            songs.sort(key=lambda x: x['rating'], reverse=True)
+            print(f"📊 Отсортированный топ: {[s['title'] + '(' + str(s['rating']) + ')' for s in songs[:3]]}")
+            
+        return songs
+        
+    except Exception as e:
+        print(f"❌ Критическая ошибка в get_catalog: {e}")
         return []
-        
-    # Получаем все данные. 
-    # Предположим порядок колонок: 
-    # A(0)=ID, B(1)=Title, C(2)=Filename, D(3)=Rating, E(4)=?, F(5)=File_ID
-    data = sheet.get_all_values()
-    
-    songs = []
-    # Начинаем с 1, чтобы пропустить заголовок таблицы
-    for row in data[1:]:
-        # Проверяем, что в строке достаточно данных (минимум 6 колонок до File_ID включительно)
-        if len(row) >= 6: 
-            songs.append({
-                'id': row[0],
-                'title': row[1],
-                'filename': row[2],
-                'rating': int(row[3]) if row[3].isdigit() else 0,
-                # row[4] пропускаем, если там пусто или другая инфа
-                'file_id': row[5] # <-- Берем File_ID из 6-й колонки (индекс 5)
-            })
-        else:
-            print(f"⚠️ Пропущена строка с недостаточным количеством данных: {row}")
-    
-    if sort_by_rating:
-        # Сортируем по рейтингу (по убыванию)
-        songs.sort(key=lambda x: x['rating'], reverse=True)
-        
-    return songs
 
 def update_rating(song_id):
     """Увеличивает рейтинг песни на 1"""
