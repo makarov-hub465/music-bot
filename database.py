@@ -61,25 +61,27 @@ def get_catalog(sort_by_rating=False):
             # Проверяем, что в строке достаточно данных (минимум 6 колонок)
             if len(row) >= 6: 
                 try:
-                    rating_val = row[3].strip() # Убираем пробелы
+                    # 1. Берем значение рейтинга из столбца E (индекс 4)
+                    raw_rating = row[4] 
                     
-                    # Пробуем превратить в число. 
-                    # Сначала в float (чтобы поймать 5.0), потом в int
-                    if rating_val:
-                        rating = int(float(rating_val))
+                    # 2. Очищаем его от всего мусора
+                    cleaned_rating = str(raw_rating).strip().replace(',', '.')
+                    
+                    # 3. Превращаем в число
+                    if cleaned_rating:
+                        rating = int(float(cleaned_rating))
                     else:
                         rating = 0
                     
                     songs.append({
-                        'id': row[0],
-                        'title': row[1],
-                        'filename': row[2],
-                        'rating': rating,
-                        'file_id': row[5] # <-- File_ID из столбца F
+                        'id': row[0],      # A
+                        'title': row[1],   # B
+                        'filename': row[2],# C
+                        'rating': rating,  # E (исправлено!)
+                        'file_id': row[5]  # F
                     })
                 except Exception as e:
-                    # Если не получилось преобразовать рейтинг, ставим 0
-                    print(f"⚠️ Ошибка конвертации рейтинга для '{row[1]}': {e}")
+                    print(f"⚠️ Ошибка конвертации для '{row[1]}': {e}")
                     songs.append({
                         'id': row[0],
                         'title': row[1],
@@ -92,10 +94,7 @@ def get_catalog(sort_by_rating=False):
         
         if sort_by_rating:
             # Сортируем по рейтингу (по убыванию)
-            # key=lambda x: x['rating'] говорит: "сортируй по полю rating"
-            # reverse=True говорит: "от большего к меньшему"
             songs.sort(key=lambda x: x['rating'], reverse=True)
-            print(f"📊 Отсортированный топ: {[s['title'] + '(' + str(s['rating']) + ')' for s in songs[:3]]}")
             
         return songs
         
