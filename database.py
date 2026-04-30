@@ -46,26 +46,37 @@ def add_user(user_id, name):
     print(f"✅ Новый пользователь добавлен: {name}")
 
 def get_catalog(sort_by_rating=False):
-    print("🎵 ЗАПРОШЕН КАТАЛОГ! Функция get_catalog запущена.") # <--- МАЯЧОК
-    """
-    Возвращает список песен...
-    """
+    """Возвращает список песен из таблицы Catalog"""
     sheet = get_sheet('Catalog')
-    # ... остальной код
-    if not sheet: return []
+    if not sheet:
+        return []
+        
+    # Получаем все данные. 
+    # Предположим порядок колонок: 
+    # A(0)=ID, B(1)=Title, C(2)=Filename, D(3)=Rating, E(4)=?, F(5)=File_ID
+    data = sheet.get_all_values()
     
-    rows = sheet.get_all_values()
-    data = rows[1:] # Убираем заголовок
+    songs = []
+    # Начинаем с 1, чтобы пропустить заголовок таблицы
+    for row in data[1:]:
+        # Проверяем, что в строке достаточно данных (минимум 6 колонок до File_ID включительно)
+        if len(row) >= 6: 
+            songs.append({
+                'id': row[0],
+                'title': row[1],
+                'filename': row[2],
+                'rating': int(row[3]) if row[3].isdigit() else 0,
+                # row[4] пропускаем, если там пусто или другая инфа
+                'file_id': row[5] # <-- Берем File_ID из 6-й колонки (индекс 5)
+            })
+        else:
+            print(f"⚠️ Пропущена строка с недостаточным количеством данных: {row}")
     
     if sort_by_rating:
-        # Сортируем данные: key=lambda x: int(x[4]) берет 5-й столбец (Рейтинг)
-        # reverse=True означает от большего к меньшему
-        try:
-            data.sort(key=lambda x: int(x[4]) if x[4].isdigit() else 0, reverse=True)
-        except Exception as e:
-            print(f"Ошибка сортировки: {e}")
-            
-    return data
+        # Сортируем по рейтингу (по убыванию)
+        songs.sort(key=lambda x: x['rating'], reverse=True)
+        
+    return songs
 
 def update_rating(song_id):
     """Увеличивает рейтинг песни на 1"""
