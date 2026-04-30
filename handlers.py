@@ -119,19 +119,39 @@ def send_top_hits(message):
 # --- 3. КАТАЛОГ ПЕСЕН (СПИСОК) ---
 @bot.message_handler(func=lambda message: message.text == "🎵 Весь каталог")
 def show_catalog(message):
-    songs = database.get_catalog()
-    if not songs:
-        bot.send_message(message.from_user.id, "Каталог пуст.")
-        return
+    user_id = message.from_user.id
+    print(f"📂 ЗАПРОШЕН ВЕСЬ КАТАЛОГ пользователем {user_id}")
     
-    markup = types.InlineKeyboardMarkup()
-    for row in songs:
-        song_id = row[0]
-        title = row[1]
-        # callback_data будет вида: play_1
-        markup.add(types.InlineKeyboardButton(text=f"🎧 {title}", callback_data=f"play_{song_id}"))
+    try:
+        songs = database.get_catalog(sort_by_rating=False)
+        print(f"📊 Получено песен из БД: {len(songs)}")
         
-    bot.send_message(message.from_user.id, "Выбери трек:", reply_markup=markup)
+        if not songs:
+            bot.send_message(user_id, "Каталог пуст.")
+            return
+
+        # Разбиваем на пачки по 10 (лимит Telegram для одного альбома)
+        batch_size = 10
+        for i in range(0, len(songs), batch_size):
+            batch = songs[i:i + batch_size]
+            media_group = []
+            
+            for song in batch:
+                file_id = song.get('file_id')
+                title = song['title']
+                if file_id and len(file_id) > 10:
+                    media = types.InputMediaAudio(media=file_id, caption=f"🎶 {title}")
+                    media_group.append(media)
+            
+            if media_group:
+                print(f"📤 Отправляю пачку {i//batch_size + 1} ({len(media_group)} треков)...")
+                bot.send_media_group(user_id, media_group)
+                
+        bot.send_message(user_id, "🎧 Каталог загружен!")
+        
+    except Exception as e:
+        print(f"❌ КРИТИЧЕСКАЯ ОШИБКА В КАТАЛОГЕ: {e}")
+        bot.send_message(user_id, f"Ошибка при загрузке каталога: {e}")
 
 # --- 4. ВОСПРОИЗВЕДЕНИЕ ОДНОЙ ПЕСНИ ---
 @bot.callback_query_handler(func=lambda call: call.data.startswith('play_'))
