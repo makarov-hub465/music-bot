@@ -239,7 +239,7 @@ def process_order(message):
     # ... остальной код
     
     # 1. Сохраняем в базу
-    database.add_order(user_id, details)
+    database.add_order(user_id, details, bot=bot, admin_id=ADMIN_ID)
     
     # 2. Уведомляем админа (тебя)
     admin_msg = (
