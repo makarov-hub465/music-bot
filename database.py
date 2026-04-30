@@ -84,25 +84,33 @@ def update_rating(song_id):
     except Exception as e:
         print(f"Ошибка обновления рейтинга: {e}")
 
-def add_order(user_id, details):
-    """Добавляет заявку на заказ в лист Orders"""
-    print(f"🔍 Ищу лист 'Orders' для пользователя {user_id}...") # <--- МАЯЧОК 1
-    
-    sheet = get_sheet('Orders')
-    
-    if not sheet:
-        print("❌ ОШИБКА: Лист 'Orders' не найден или нет доступа!") # <--- МАЯЧОК 2
-        return
-    
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    order_id = int(datetime.now().timestamp())
-    
+import telebot # Убедись, что импортирован, если нужно
+# Но лучше передать объект bot из handlers
+
+def add_order(user_id, details, bot=None, admin_id=None):
+    """Добавляет заявку и сообщает админу о результате"""
     try:
-        print(f"📝 Пытаюсь записать строку: [{order_id}, {user_id}, {now}, ...]") # <--- МАЯЧОК 3
+        sheet = get_sheet('Orders')
+        
+        if not sheet:
+            if bot and admin_id:
+                bot.send_message(admin_id, "❌ ОШИБКА: Лист 'Orders' не найден в таблице!")
+            return
+        
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        order_id = int(datetime.now().timestamp())
+        
+        # Пробуем записать
         sheet.append_row([order_id, user_id, now, details, "New"])
-        print("✅ ЗАПИСЬ УСПЕШНА!") # <--- МАЯЧОК 4
+        
+        # Сообщаем об успехе
+        if bot and admin_id:
+            bot.send_message(admin_id, f"✅ ЗАЯВКА ЗАПИСАНА!\nID: {order_id}\nТекст: {details}")
+            
     except Exception as e:
-        print(f"❌ ОШИБКА ПРИ ЗАПИСИ В ТАБЛИЦУ: {e}") # <--- МАЯЧОК 5
+        # Сообщаем об ошибке
+        if bot and admin_id:
+            bot.send_message(admin_id, f"❌ ОШИБКА ЗАПИСИ В ТАБЛИЦУ:\n{str(e)}")
 
 def save_review(user_id, song_title, review_text):
     """Сохраняет отзыв в лист Reviews"""
