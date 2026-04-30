@@ -23,3 +23,9 @@ def webhook():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
+# Временный код для обновления вебхука
+import telebot
+bot = telebot.TeleBot(TOKEN) # Убедись, что TOKEN определен
+bot.remove_webhook()
+bot.set_webhook(url="https://music-bot-sergey.onrender.com/webhook/")
+print("✅ Webhook updated!")
