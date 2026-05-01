@@ -155,3 +155,21 @@ def save_review(user_id, song_title, review_text):
     
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     sheet.append_row([now, user_id, song_title, review_text])
+
+def vote_for_song(song_id):
+    """Увеличивает рейтинг песни на 1"""
+    try:
+        sheet = get_sheet('Catalog')
+        data = sheet.get_all_values()
+        
+        for i, row in enumerate(data[1:], start=2):
+            if str(row[0]) == str(song_id):
+                current_rating = int(row[4]) if row[4].isdigit() else 0
+                new_rating = current_rating + 1
+                cell_address = f"E{i}"
+                sheet.update(cell_address, [[new_rating]])
+                return True
+        return False
+    except Exception as e:
+        print(f"Ошибка голосования: {e}")
+        return False
