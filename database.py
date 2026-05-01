@@ -14,7 +14,7 @@ def get_sheet(sheet_name):
         creds_json = os.getenv('GOOGLE_CREDS_JSON_V2')
         
         if not creds_json:
-            print("❌ Ошибка: Переменная GOOGLE_CREDS_JSON не найдена!")
+            print("❌ Ошибка: Переменная GOOGLE_CREDS_JSON_V2 не найдена!")
             return None 
             
         # Преобразуем строку JSON в словарь
@@ -77,11 +77,12 @@ def get_catalog(sort_by_rating=False):
                         'id': row[0],      # A
                         'title': row[1],   # B
                         'filename': row[2],# C
-                        'rating': rating,  # E (исправлено!)
+                        'rating': rating,  # E
                         'file_id': row[5]  # F
                     })
                 except Exception as e:
                     print(f"⚠️ Ошибка конвертации для '{row[1]}': {e}")
+                    # Если ошибка, добавляем с рейтингом 0, чтобы не терять песню
                     songs.append({
                         'id': row[0],
                         'title': row[1],
@@ -101,27 +102,6 @@ def get_catalog(sort_by_rating=False):
     except Exception as e:
         print(f"❌ Критическая ошибка в get_catalog: {e}")
         return []
-
-def update_rating(song_id):
-    """Увеличивает рейтинг песни на 1"""
-    sheet = get_sheet('Catalog')
-    if not sheet: return
-    
-    # Ищем строку с нужным ID песни (в первом столбце)
-    try:
-        cell = sheet.find(str(song_id), in_column=1)
-        if cell:
-            row_index = cell.row
-            # Текущий рейтинг находится в 5-м столбце (E)
-            current_rating = int(sheet.cell(row_index, 5).value or 0)
-            new_rating = current_rating + 1
-            sheet.update_cell(row_index, 5, new_rating)
-            print(f"👍 Рейтинг песни {song_id} увеличен до {new_rating}")
-    except Exception as e:
-        print(f"Ошибка обновления рейтинга: {e}")
-
-import telebot # Убедись, что импортирован, если нужно
-# Но лучше передать объект bot из handlers
 
 def add_order(user_id, details, bot=None, admin_id=None):
     """Добавляет заявку и сообщает админу о результате"""
@@ -157,7 +137,7 @@ def save_review(user_id, song_title, review_text):
     sheet.append_row([now, user_id, song_title, review_text])
 
 def vote_for_song(song_id):
-    """Увеличивает рейтинг песни на 1"""
+    """Увеличивает рейтинг песни на 1 (используется в новом хендлере)"""
     try:
         sheet = get_sheet('Catalog')
         data = sheet.get_all_values()
