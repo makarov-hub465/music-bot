@@ -116,43 +116,74 @@ def send_top_hits(message):
     else:
         bot.send_message(user_id, "Нет треков для отображения.")
 
-# --- 3. КАТАЛОГ ПЕСЕН (СПИСОК) ---
+# --- 3. КАТАЛОГ ПЕСЕН (НОВОЕ МЕНЮ С КНОПКАМИ) ---
 @bot.message_handler(func=lambda message: message.text == "🎵 Весь каталог")
-def show_catalog(message):
+def show_catalog_menu(message):
     user_id = message.from_user.id
+    songs = database.get_catalog(sort_by_rating=False)
     
-    # 1. Сообщаем, что начали
-    bot.send_message(user_id, "⏳ Загружаю каталог... Подождите.")
-    
-    try:
-        # 2. Получаем данные
-        songs = database.get_catalog(sort_by_rating=False)
-        
-        if not songs:
-            bot.send_message(user_id, "❌ Каталог пуст или ошибка чтения таблицы.")
-            return
-            
-        # 3. Отчитываемся, сколько нашли
-        bot.send_message(user_id, f"📊 Найдено песен: {len(songs)}. Начинаю отправку...")
+    if not songs:
+        bot.send_message(user_id, "Каталог пуст.")
+        return
 
-        # 4. Разбиваем на пачки по 10 (лимит Telegram)
-        batch_size = 10
-        total_sent = 0
+    # Ограничиваем до 15 песен для удобства интерфейса
+    if len(songs) > 15:
+        songs = songs[:15]
+
+    # Создаем клавиатуру: каждая песня - отдельная кнопка
+    markup = types.InlineKeyboardMarkup(row_width=1) # Кнопки друг под другом
+    
+    for song in songs:
+        title = song['title']
+        song_id = song['id']
+        # Кнопка с названием песни. При нажатии вызываем play_song_with_buttons
+        btn = types.InlineKeyboardButton(f"▶️ {title}", callback_data=f"play_song_{song_id}")
+        markup.add(btn)
+
+    bot.send_message(
+        user_id, 
+        "🎵 <b>Весь каталог:</b>\nНажмите на название, чтобы прослушать и оценить:", 
+        parse_mode='HTML', 
+        reply_markup=markup
+    )
+
+# --- Обработчик нажатия на кнопку песни (Вместо старого play_song) ---
+@bot.callback_query_handler(func=lambda call: call.data.startswith('play_song_'))
+def play_song_with_buttons(call):
+    song_id = call.data.split('_')[2] # Извлекаем ID из callback_data (play_song_ID)
+    user_id = call.from_user.id
+    
+    # Ищем песню по ID в словаре, который возвращает get_catalog
+    all_songs = database.get_catalog()
+    # Так как get_catalog теперь возвращает список словарей, ищем по ключу 'id'
+    song = next((s for s in all_songs if str(s['id']) == str(song_id)), None)
+    
+    if not song:
+        bot.answer_callback_query(call.id, text="Песня не найдена", show_alert=True)
+        return
+
+    file_id = song.get('file_id')
+    title = song['title']
+    
+    if file_id:
+        # Кнопки под плеером
+        markup = types.InlineKeyboardMarkup()
+        btn_vote = types.InlineKeyboardButton("👍 Голосовать (+1)", callback_data=f"vote_{song_id}")
+        btn_review = types.InlineKeyboardButton("💬 Оставить отзыв", callback_data=f"review_{song_id}")
+        markup.row(btn_vote, btn_review)
         
-        for i in range(0, len(songs), batch_size):
-            batch = songs[i:i + batch_size]
-            media_group = []
-            
-            for song in batch:
-                file_id = song.get('file_id')
-                title = song['title']
-                if file_id and len(file_id) > 10:
-                    media = types.InputMediaAudio(media=file_id, caption=f"🎶 {title}")
-                    media_group.append(media)
-            
-            if media_group:
-                bot.send_media_group(user_id, media_group)
-                total_sent += len(media_group)
+        # Отправляем аудио с кнопками через file_id (быстро!)
+        bot.send_audio(
+            user_id, 
+            audio=file_id, 
+            caption=f"🎶 <b>{title}</b>",
+            parse_mode='HTML',
+            reply_markup=markup
+        )
+        
+        bot.answer_callback_query(call.id) # Убираем индикатор загрузки
+    else:
+        bot.answer_callback_query(call.id, text="Ошибка файла (нет ID)", show_alert=True)
                 
         # 5. Финальный отчет
         bot.send_message(user_id, f"✅ Готово! Отправлено треков: {total_sent}")
@@ -205,16 +236,18 @@ def play_song(call):
     bot.send_message(call.from_user.id, "Как тебе трек?", reply_markup=markup)
     bot.answer_callback_query(call.id)
 
-# --- 5. ЛАЙКИ ---
-@bot.callback_query_handler(func=lambda call: call.data.startswith('like_'))
-def like_song(call):
+# --- 5. ГОЛОСОВАНИЕ (Бывшие Лайки) ---
+@bot.callback_query_handler(func=lambda call: call.data.startswith('vote_'))
+def handle_vote(call):
     song_id = call.data.split('_')[1]
-    database.update_rating(song_id)
-    bot.answer_callback_query(call.id, "Спасибо за лайк! ❤️")
-    bot.send_message(call.from_user.id, "Твой голос учтен в рейтинге!")
+    success = database.vote_for_song(song_id)
+    
+    if success:
+        bot.answer_callback_query(call.id, text="✅ Голос учтен!", show_alert=True)
+    else:
+        bot.answer_callback_query(call.id, text="❌ Ошибка голосования", show_alert=True)
 
 # --- ОБРАБОТКА ОТЗЫВОВ ---
-
 @bot.callback_query_handler(func=lambda call: call.data.startswith('review_'))
 def start_review(call):
     song_id = call.data.split('_')[1]
@@ -235,15 +268,15 @@ def process_review(message):
     song_id = review_states[user_id]
     review_text = message.text
     
-    # Находим название песни
+    # Находим название песни через базу данных (словари)
     songs = database.get_catalog()
     song_title = "Неизвестная песня"
-    for row in songs:
-        if row[0] == song_id:
-            song_title = row[1]
+    for s in songs:
+        if str(s['id']) == str(song_id):
+            song_title = s['title']
             break
             
-    # 1. СОХРАНЯЕМ В ТАБЛИЦУ (Новая строка)
+    # 1. СОХРАНЯЕМ В ТАБЛИЦУ
     database.save_review(user_id, song_title, review_text)
             
     # 2. Уведомляем админа
