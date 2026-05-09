@@ -20,7 +20,11 @@ def webhook():
         bot.process_new_updates([update])
         return ''
     return 'Error', 403
-
+# --- СПЕЦИАЛЬНЫЙ МАРШРУТ ДЛЯ ПРОБУЖДЕНИЯ ---
+@app.route('/ping')
+def ping():
+    return "Bot is alive!", 200
+# ------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
 # Временный код для обновления вебхука
